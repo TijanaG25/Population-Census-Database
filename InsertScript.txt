@@ -1,0 +1,91 @@
+USE Popis
+GO
+SELECT * INTO temp_stat2
+FROM OPENROWSET( 'Microsoft.ACE.OLEDB.12.0', 'Excel 12.0; HDR=YES;Database= C:\Users\Tijana\Desktop\Maturski\3_stanovnistvo-prema-nacionalnoj-pripadnosti-i-maternjem-jeziku.xlsx',Sheet1$); 
+
+sp_configure 'show advanced options', 1;
+RECONFIGURE;
+GO
+sp_configure 'Ad Hoc Distributed Queries', 1;
+RECONFIGURE;
+GO
+USE [master]
+GO
+EXEC master . dbo. sp_MSset_oledb_prop N'Microsoft.ACE.OLEDB.12.0' ,
+N'AllowInProcess', 1
+GO
+EXEC master . dbo. sp_MSset_oledb_prop N'Microsoft.ACE.OLEDB.12.0' ,
+N'DynamicParameters' , 1
+GO 
+
+
+USE Popis
+GO
+INSERT INTO regioni
+SELECT DISTINCT(regioni) FROM temp_stat2
+Из табеле temp_stat2 попуњава се табела regioni.
+
+USE Popis
+GO
+INSERT INTO nacionalnePripadnosti
+SELECT DISTINCT(nacionalnePripadnosti) FROM temp_stat2
+
+USE Popis
+GO
+INSERT INTO jezici
+SELECT DISTINCT(jezici) FROM temp_stat2
+
+
+USE Popis
+GO
+ALTER TABLE pomNPJezik
+ADD t_r nvarchar(25)
+
+ALTER TABLE pomNPJezik
+ADD t_n nvarchar(25)
+
+ALTER TABLE pomNPJezik
+ADD t_j nvarchar(25)
+
+
+USE Popis
+GO
+INSERT INTO pomNPJezik (t_r, t_n, t_j, broj)
+SELECT * FROM temp_stat2
+
+
+USE Popis
+GO
+UPDATE pomNPJezik
+SET idRegiona = (SELECT id FROM regioni WHERE naziv = t_r)
+
+
+USE Popis
+GO
+UPDATE pomNPJezik
+SET idJezika = (SELECT id FROM jezici WHERE naziv = t_j)
+
+USE Popis
+GO
+UPDATE pomNPJezik
+SET idNacionalaPripadnost = (SELECT id FROM nacionalnePripadnosti WHERE naziv = t_n)
+
+
+USE Popis
+GO
+ALTER TABLE pomNPJezik
+DROP COLUMN t_r
+
+USE Popis
+GO
+ALTER TABLE pomNPJezik
+DROP COLUMN t_n
+
+USE Popis
+GO
+ALTER TABLE pomNPJezik
+DROP COLUMN t_j
+
+USE Popis
+GO
+DROP TABLE temp_stat2
